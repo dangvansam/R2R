@@ -58,7 +58,7 @@ graph TD
     Worker -->|5. Parse Document| Unstructured
     Worker -->|6. Generate Embeddings| LLM
     Worker -->|7. Store Vectors & Chunks| DB
-    Worker -->|8. Extract Entities (Graph)| LLM
+    Worker -->|"8. Extract Entities (Graph)"| LLM
     Worker -->|9. Update Graph| DB
 
     %% Retrieval Workflow
