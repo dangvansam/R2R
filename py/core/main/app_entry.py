@@ -72,6 +72,7 @@ config_path = os.getenv("R2R_CONFIG_PATH", None)
 
 if not config_path and not config_name:
     config_name = "default"
+
 host = os.getenv("R2R_HOST", os.getenv("HOST", "0.0.0.0"))
 port = int(os.getenv("R2R_PORT", "7272"))
 

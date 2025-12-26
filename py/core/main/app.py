@@ -80,19 +80,19 @@ class R2RApp:
     def _setup_routes(self):
         self.app.include_router(self.chunks_router, prefix="/v3")
         self.app.include_router(self.collections_router, prefix="/v3")
-        self.app.include_router(self.conversations_router, prefix="/v3")
+        # self.app.include_router(self.conversations_router, prefix="/v3")
         self.app.include_router(self.documents_router, prefix="/v3")
-        self.app.include_router(self.graph_router, prefix="/v3")
-        self.app.include_router(self.indices_router, prefix="/v3")
-        self.app.include_router(self.prompts_router, prefix="/v3")
-        self.app.include_router(self.retrieval_router, prefix="/v3")
-        self.app.include_router(self.system_router, prefix="/v3")
+        # self.app.include_router(self.graph_router, prefix="/v3")
+        # self.app.include_router(self.indices_router, prefix="/v3")
+        # self.app.include_router(self.prompts_router, prefix="/v3")
+        # self.app.include_router(self.retrieval_router, prefix="/v3")
+        # self.app.include_router(self.system_router, prefix="/v3")
         self.app.include_router(self.users_router, prefix="/v3")
 
         @self.app.get("/openapi_spec", include_in_schema=False)
         async def openapi_spec():
             return get_openapi(
-                title="R2R Application API",
+                title="KNOWLEDGE BASE API",
                 version="1.0.0",
                 routes=self.app.routes,
             )
