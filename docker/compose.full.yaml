@@ -1,31 +1,18 @@
-volumes:
-  hatchet_certs:
-    name: hatchet_certs
-  hatchet_config:
-    name: hatchet_config
-  hatchet_api_key:
-    name: hatchet_api_key
-  hatchet_rabbitmq_data:
-    name: hatchet_rabbitmq_data
-  hatchet_rabbitmq_conf:
-    name: hatchet_rabbitmq_conf
-  hatchet_postgres_data:
-    name: hatchet_postgres_data
-  minio_data:
-    name: minio_data
-  postgres_data:
-    name: postgres_data
+name: test
+
+networks:
+  r2r-network:
+    driver: bridge
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    profiles: [postgres]
     env_file:
       - ./env/postgres.env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./volumes/postgres_data:/var/lib/postgresql/data
+    networks:
+      - r2r-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -35,17 +22,20 @@ services:
     command: >
       postgres
       -c max_connections=1024
+    ports:
+      - "54322:5432"
 
   minio:
     image: minio/minio
-    profiles: [minio]
     env_file:
       - ./env/minio.env
     volumes:
-      - minio_data:/data
+      - ./volumes/minio_data:/data
+    networks:
+      - r2r-network
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9900:9000"
+      - "9901:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -55,29 +45,32 @@ services:
     command: server /data --console-address ":9001"
 
   hatchet-postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     env_file:
       - ./env/hatchet.env
     volumes:
-      - hatchet_postgres_data:/var/lib/postgresql/data
+      - ./volumes/hatchet_postgres_data:/var/lib/postgresql/data
+    networks:
+      - r2r-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hatchet_user -d hatchet"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-
   hatchet-rabbitmq:
     image: "rabbitmq:3-management"
     hostname: "hatchet-rabbitmq"
-    ports:
-      - "5673:5672"
-      - "15673:15672"
+    # ports:
+    #   - "5673:5672"
+    #   - "15673:15672"
+    networks:
+      - r2r-network
     env_file:
       - ./env/hatchet.env
     volumes:
-      - hatchet_rabbitmq_data:/var/lib/rabbitmq
-      - hatchet_rabbitmq_conf:/etc/rabbitmq/rabbitmq.conf
+      - ./volumes/hatchet_rabbitmq_data:/var/lib/rabbitmq
+      - ./volumes/hatchet_rabbitmq_conf:/etc/rabbitmq/rabbitmq.conf
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
@@ -85,10 +78,12 @@ services:
       retries: 5
 
   hatchet-create-db:
-    image: postgres:latest
+    image: postgres:16-alpine
     command: sh /scripts/create-hatchet-db.sh
     volumes:
       - ./scripts:/scripts
+    networks:
+      - r2r-network
     env_file:
       - ./env/hatchet.env
 
@@ -96,6 +91,8 @@ services:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:v0.53.15
     env_file:
       - ./env/hatchet.env
+    networks:
+      - r2r-network
     depends_on:
       hatchet-create-db:
         condition: service_completed_successfully
@@ -105,9 +102,11 @@ services:
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
     env_file:
       - ./env/hatchet.env
+    networks:
+      - r2r-network
     volumes:
-      - hatchet_certs:/hatchet/certs
-      - hatchet_config:/hatchet/config
+      - ./volumes/hatchet_certs:/hatchet/certs
+      - ./volumes/hatchet_config:/hatchet/config
     depends_on:
       hatchet-migration:
         condition: service_completed_successfully
@@ -121,13 +120,15 @@ services:
     depends_on:
       hatchet-setup-config:
         condition: service_completed_successfully
+    networks:
+      - r2r-network
     ports:
       - "7077:7077"
     env_file:
       - ./env/hatchet.env
     volumes:
-      - hatchet_certs:/hatchet/certs
-      - hatchet_config:/hatchet/config
+      - ./volumes/hatchet_certs:/hatchet/certs
+      - ./volumes/hatchet_config:/hatchet/config
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8733/live"]
       interval: 10s
@@ -144,8 +145,10 @@ services:
     env_file:
       - ./env/hatchet.env
     volumes:
-      - hatchet_certs:/hatchet/certs
-      - hatchet_config:/hatchet/config
+      - ./volumes/hatchet_certs:/hatchet/certs
+      - ./volumes/hatchet_config:/hatchet/config
+    networks:
+      - r2r-network
     ports:
       - "7274:80"
 
@@ -154,15 +157,19 @@ services:
     command: sh /scripts/setup-token.sh
     volumes:
       - ./scripts:/scripts
-      - hatchet_certs:/hatchet/certs
-      - hatchet_config:/hatchet/config
-      - hatchet_api_key:/hatchet_api_key
+      - ./volumes/hatchet_certs:/hatchet/certs
+      - ./volumes/hatchet_config:/hatchet/config
+      - ./volumes/hatchet_api_key:/hatchet_api_key
+    networks:
+      - r2r-network
     depends_on:
       hatchet-setup-config:
         condition: service_completed_successfully
 
   unstructured:
     image: ragtoriches/unst-prod
+    networks:
+      - r2r-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7275/health"]
       interval: 10s
@@ -171,8 +178,10 @@ services:
 
   graph_clustering:
     image: ragtoriches/cluster-prod
-    ports:
-      - "7276:7276"
+    # ports:
+    #   - "7276:7276"
+    networks:
+      - r2r-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7276/health"]
       interval: 10s
@@ -180,7 +189,9 @@ services:
       retries: 5
 
   r2r:
-    image: sciphiai/r2r:latest
+    build:
+      context: ../py
+      dockerfile: Dockerfile
     ports:
       - "7272:7272"
     env_file:
@@ -192,10 +203,12 @@ services:
       timeout: 5s
       retries: 5
     restart: on-failure
+    networks:
+      - r2r-network
     volumes:
       - ./user_configs:/app/user_configs
       - ./user_tools:/app/user_tools
-      - hatchet_api_key:/hatchet_api_key:ro
+      - ./volumes/hatchet_api_key:/hatchet_api_key:ro
       - ./scripts:/scripts
     extra_hosts:
       - host.docker.internal:host-gateway
@@ -213,3 +226,5 @@ services:
       - ./env/r2r-dashboard.env
     ports:
       - "7273:3000"
+    networks:
+      - r2r-network

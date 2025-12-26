@@ -43,3 +43,4 @@ go.work.sum
 .ruff_cache/
 *.egg-info
 .venv
+docker/volumes

@@ -171,12 +171,13 @@ def hatchet_ingestion_factory(
                     )
                     await service.providers.database.documents_handler.set_workflow_status(
                         id=collection_id,
-                        status_type="graph_cluster_status",  # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                        # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                        status_type="graph_cluster_status",
                         status=GraphConstructionStatus.OUTDATED,
                     )
                 else:
                     for collection_id_str in collection_ids:
-                        collection_id = UUID(collection_id_str)
+                        collection_id = collection_id_str
                         try:
                             name = document_info.title or "N/A"
                             description = ""
@@ -200,10 +201,18 @@ def hatchet_ingestion_factory(
                                 f"Warning, could not create collection with error: {str(e)}"
                             )
 
-                        await service.providers.database.collections_handler.assign_document_to_collection_relational(
-                            document_id=document_info.id,
-                            collection_id=collection_id,
-                        )
+                        try:
+                            await service.providers.database.collections_handler.assign_document_to_collection_relational(
+                                document_id=document_info.id,
+                                collection_id=collection_id,
+                            )
+                        except R2RException as e:
+                            if e.status_code == 409:
+                                logger.warning(
+                                    f"Document {document_info.id} is already assigned to collection {collection_id}."
+                                )
+                            else:
+                                raise e
                         await service.providers.database.chunks_handler.assign_document_chunks_to_collection(
                             document_id=document_info.id,
                             collection_id=collection_id,
@@ -215,7 +224,8 @@ def hatchet_ingestion_factory(
                         )
                         await service.providers.database.documents_handler.set_workflow_status(
                             id=collection_id,
-                            status_type="graph_cluster_status",  # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                            # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                            status_type="graph_cluster_status",
                             status=GraphConstructionStatus.OUTDATED,
                         )
 
@@ -448,7 +458,8 @@ def hatchet_ingestion_factory(
                     )
                     await service.providers.database.documents_handler.set_workflow_status(
                         id=collection_id,
-                        status_type="graph_cluster_status",  # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                        # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                        status_type="graph_cluster_status",
                         status=GraphConstructionStatus.OUTDATED,
                     )
                 else:
@@ -477,10 +488,18 @@ def hatchet_ingestion_factory(
                                 f"Warning, could not create collection with error: {str(e)}"
                             )
 
-                        await service.providers.database.collections_handler.assign_document_to_collection_relational(
-                            document_id=document_info.id,
-                            collection_id=collection_id,
-                        )
+                        try:
+                            await service.providers.database.collections_handler.assign_document_to_collection_relational(
+                                document_id=document_info.id,
+                                collection_id=collection_id,
+                            )
+                        except R2RException as e:
+                            if e.status_code == 409:
+                                logger.warning(
+                                    f"Document {document_info.id} is already assigned to collection {collection_id}."
+                                )
+                            else:
+                                raise e
 
                         await service.providers.database.chunks_handler.assign_document_chunks_to_collection(
                             document_id=document_info.id,
@@ -496,7 +515,8 @@ def hatchet_ingestion_factory(
                         await service.providers.database.documents_handler.set_workflow_status(
                             id=collection_id,
                             status_type="graph_cluster_status",
-                            status=GraphConstructionStatus.OUTDATED,  # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                            # NOTE - we should actually check that cluster has been made first, if not it should be PENDING still
+                            status=GraphConstructionStatus.OUTDATED,
                         )
             except Exception as e:
                 logger.error(
