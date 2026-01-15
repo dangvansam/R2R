@@ -175,6 +175,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - "7275:7275"
 
   graph_clustering:
     image: ragtoriches/cluster-prod

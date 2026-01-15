@@ -193,3 +193,8 @@ class ToolRegistry:
                 f"Error creating or setting context for tool instance '{tool_name}': {e}"
             )
             return None
+
+
+if __name__ == "__main__":
+    registry = ToolRegistry()
+    print(registry.list_available_tools())

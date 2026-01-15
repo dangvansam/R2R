@@ -45,3 +45,4 @@ go.work.sum
 .venv
 docker/volumes
 data
+tmp
